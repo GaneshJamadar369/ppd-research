@@ -1,0 +1,49 @@
+Raw rows                    : 1503
+Dropped 'Not interested to say'    : 335
+Analysed rows               : 1168
+Missing cells               : 27 (0.18%) -> fold-wise imputation
+Merged categories           : 'Not at all' -> 'No' (Overeating or loss of appetite)
+Class balance               : {0: 709, 1: 459} (positive rate 0.393)
+Duplicate feature rows      : 920 / 1168
+Unique response patterns    : 248 (label-conflicting: 1)
+
+==============================================================================
+PROTOCOL A  (1168 rows, 1168 groups, 3 repeats)
+==============================================================================
+  Majority class         AUC 0.496  Acc 0.607  F1 0.000  Brier 0.239
+  Severity score only    AUC 0.531  Acc 0.620  F1 0.094  Brier 0.236
+  Logistic Regression    AUC 0.839  Acc 0.754  F1 0.688  Brier 0.159
+  SVM (RBF)              AUC 0.998  Acc 0.990  F1 0.987  Brier 0.009
+  Random Forest          AUC 0.998  Acc 0.986  F1 0.983  Brier 0.019
+  File "C:\Users\HP\AppData\Roaming\Python\Python311\site-packages\joblib\externals\loky\backend\context.py", line 257, in _count_physical_cores
+    cpu_info = subprocess.run(
+               ^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python311\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python311\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\Program Files\Python311\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  Gradient Boosting      AUC 0.997  Acc 0.981  F1 0.976  Brier 0.019
+  ANN (MLP)              AUC 0.991  Acc 0.951  F1 0.938  Brier 0.036
+
+==============================================================================
+PROTOCOL B  (1168 rows, 248 groups, 3 repeats)
+==============================================================================
+  Majority class         AUC 0.492  Acc 0.607  F1 0.000  Brier 0.239
+  Severity score only    AUC 0.521  Acc 0.613  F1 0.074  Brier 0.237
+  Logistic Regression    AUC 0.787  Acc 0.707  F1 0.627  Brier 0.181
+  SVM (RBF)              AUC 0.880  Acc 0.779  F1 0.735  Brier 0.142
+  Random Forest          AUC 0.901  Acc 0.797  F1 0.740  Brier 0.125
+  Gradient Boosting      AUC 0.865  Acc 0.773  F1 0.709  Brier 0.151
+  ANN (MLP)              AUC 0.836  Acc 0.727  F1 0.635  Brier 0.166
+
+==============================================================================
+PROTOCOL C  (248 rows, 248 groups, 3 repeats)
+==============================================================================
+  Majority class         AUC 0.487  Acc 0.532  F1 0.000  Brier 0.249
+  Severity score only    AUC 0.348  Acc 0.536  F1 0.017  Brier 0.252
+  Logistic Regression    AUC 0.629  Acc 0.597  F1 0.550  Brier 0.235
+  SVM (RBF)              AUC 0.601  Acc 0.556  F1 0.577  Brier 0.242

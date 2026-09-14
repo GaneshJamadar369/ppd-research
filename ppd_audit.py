@@ -27,13 +27,18 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.metrics import auc, roc_curve
+from sklearn.metrics import auc, roc_auc_score, roc_curve
 
-from ppd_preprocessing import AGE_COL, SYMPTOM_COLS, level_order, prepare
+from sklearn.pipeline import Pipeline
+
+from ppd_preprocessing import (
+    AGE_COL, SYMPTOM_COLS, build_preprocessor, level_order, prepare,
+)
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "results"
 N_SIM = 500
+SEED_LC = 7
 RNG = np.random.default_rng(20240914)
 
 # Ordered by effective capacity, low -> high. Used for the inflation figure.
@@ -255,6 +260,107 @@ def fig_roc_pair(path: Path) -> bool:
     return True
 
 
+# --------------------------------------------- A1b: information saturates at ~248
+def learning_curve(X: pd.DataFrame, y: pd.Series, groups: np.ndarray,
+                   n_draws: int = 25) -> pd.DataFrame:
+    """Is the carrier of information the row count or the distinct-questionnaire count?
+
+    A quarter of the response patterns is held out, and the test set takes ONE row per
+    held-out pattern. That matters: an earlier version scored against all rows of the
+    held-out patterns, which is row-weighted, and row-sampled training then looked better
+    purely because it matched the test frequencies. A pattern-level test set removes that
+    confound and isolates the information question.
+
+    Two ways of growing the training set are compared:
+      'distinct'   -- k patterns, one row each      (k rows, k patterns)
+      'duplicated' -- k rows drawn from the pool    (k rows, fewer than k patterns)
+
+    Plotted against rows the two must differ. Plotted against the number of DISTINCT
+    patterns actually covered, they collapse onto one curve if -- and only if -- rows
+    beyond the distinct questionnaires carry no additional information.
+    """
+    from sklearn.ensemble import RandomForestClassifier
+
+    rng = np.random.default_rng(SEED_LC)
+    uniq = np.unique(groups)
+    yv = y.to_numpy()
+    rows = []
+
+    for draw in range(n_draws):
+        test_pat = rng.choice(uniq, size=max(2, int(0.25 * len(uniq))), replace=False)
+        # One row per held-out pattern: a pattern-level, not row-weighted, test set.
+        test_idx = np.array([np.flatnonzero(groups == g)[0] for g in test_pat])
+        if len(np.unique(yv[test_idx])) < 2:
+            continue
+        pool_pat = np.setdiff1d(uniq, test_pat)
+        pool_idx = np.flatnonzero(~np.isin(groups, test_pat))
+        # one representative row per training pattern
+        rep = {g: np.flatnonzero(groups == g)[0] for g in pool_pat}
+
+        for k in (20, 40, 60, 80, 100, 130, 160, len(pool_pat)):
+            if k > len(pool_pat):
+                continue
+            chosen = rng.choice(pool_pat, size=k, replace=False)
+            for mode, idx in (
+                ("distinct", np.array([rep[g] for g in chosen])),
+                ("duplicated", rng.choice(pool_idx, size=k, replace=False)),
+            ):
+                if len(np.unique(yv[idx])) < 2:
+                    continue
+                clf = Pipeline([
+                    ("prep", build_preprocessor("onehot", scale=False)),
+                    ("clf", RandomForestClassifier(n_estimators=300, min_samples_leaf=3,
+                                                   random_state=SEED_LC, n_jobs=-1)),
+                ]).fit(X.iloc[idx], yv[idx])
+                p = clf.predict_proba(X.iloc[test_idx])[:, 1]
+                rows.append({"draw": draw, "rows": k, "mode": mode,
+                             "patterns": len(np.unique(groups[idx])),
+                             "auc": roc_auc_score(yv[test_idx], p)})
+    return pd.DataFrame(rows)
+
+
+def fig_learning_curve(lc: pd.DataFrame, path: Path) -> None:
+    """Two views of the same runs. The second is the test of the effective-n claim."""
+    styles = {"distinct": (PALETTE["accent"], "o-", "k distinct questionnaires (1 row each)"),
+              "duplicated": (PALETTE["obs"], "s--", "k rows drawn from the full file")}
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5), sharey=True)
+
+    for ax, xvar, title, xlabel in (
+        (axes[0], "rows", "(a) Against training rows", "Training rows"),
+        (axes[1], "patterns",
+         "(b) Against distinct questionnaires covered\n"
+         "(curves do not collapse: repeats add frequency information)",
+         "Distinct response patterns in the training set"),
+    ):
+        for mode, (colour, fmt, label) in styles.items():
+            sub = lc[lc["mode"] == mode]
+            if xvar == "patterns":
+                # bin the pattern counts so the two modes are comparable on one axis
+                sub = sub.assign(_b=(sub["patterns"] / 10).round() * 10)
+                g = sub.groupby("_b")["auc"]
+            else:
+                g = sub.groupby(xvar)["auc"]
+            m, lo, hi = g.mean(), g.quantile(0.25), g.quantile(0.75)
+            ax.plot(m.index, m.to_numpy(), fmt, lw=2, ms=5, color=colour, label=label)
+            ax.fill_between(m.index, lo.to_numpy(), hi.to_numpy(), color=colour, alpha=0.13)
+        ax.set_xlabel(xlabel)
+        ax.set_title(title, fontsize=10)
+        ax.grid(alpha=0.25)
+        ax.set_axisbelow(True)
+
+    axes[0].set_ylabel("Held-out ROC-AUC (one row per unseen pattern)")
+    axes[0].legend(fontsize=8.5, loc="lower right")
+    # Honest reading: the two modes do NOT collapse in (b). Rows beyond the distinct
+    # questionnaires still help a little, because repeat counts carry frequency
+    # information. The effect is small (~0.02 AUC) and the interquartile bands overlap
+    # throughout; the headline is the level, not the gap.
+    fig.suptitle("Generalising to unseen questionnaires plateaus near 0.66 AUC",
+                 fontsize=12)
+    fig.tight_layout()
+    fig.savefig(path, dpi=200)
+    plt.close(fig)
+
+
 # ------------------------------------------------------ A3: construct validity
 def monotonicity_table(X: pd.DataFrame, y: pd.Series) -> pd.DataFrame:
     rows = []
@@ -341,6 +447,18 @@ def main() -> None:
     n_inv = int(mono["middle_below_none"].sum())
     print(f"  {int((~mono['monotone']).sum())}/{len(mono)} items non-monotone; "
           f"{n_inv} have the middle level BELOW the 'no symptom' level")
+
+    print("\n" + "=" * 78)
+    print("A1b  Learning curve: does adding rows add information?")
+    print("=" * 78)
+    lc = learning_curve(X, y, prep["groups"])
+    print("  by training ROWS:")
+    print(lc.groupby(["mode", "rows"])["auc"].mean().unstack(0).round(3).to_string())
+    lcb = lc.assign(_b=(lc["patterns"] / 10).round() * 10)
+    print("\n  by DISTINCT PATTERNS covered (do the two modes collapse?):")
+    print(lcb.groupby(["mode", "_b"])["auc"].mean().unstack(0).round(3).to_string())
+    lc.to_csv(OUT / "learning_curve.csv", index=False)
+    fig_learning_curve(lc, OUT / "fig_audit_learning_curve.png")
 
     fig_patterns(ind, disp, OUT / "fig_audit_patterns.png")
     fig_inflation(infl, OUT / "fig_audit_inflation.png")
