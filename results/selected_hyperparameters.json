@@ -1,0 +1,257 @@
+{
+  "protocol_A": {
+    "Logistic Regression": [
+      {
+        "clf__C": 1.0,
+        "clf__class_weight": "balanced"
+      },
+      {
+        "clf__C": 10.0,
+        "clf__class_weight": "balanced"
+      },
+      {
+        "clf__C": 0.01,
+        "clf__class_weight": "balanced"
+      },
+      {
+        "clf__C": 0.1,
+        "clf__class_weight": "balanced"
+      },
+      {
+        "clf__C": 10.0,
+        "clf__class_weight": "balanced"
+      }
+    ],
+    "SVM (RBF)": [
+      {
+        "clf__C": 10.0,
+        "clf__gamma": 0.1
+      },
+      {
+        "clf__C": 10.0,
+        "clf__gamma": 0.1
+      },
+      {
+        "clf__C": 1.0,
+        "clf__gamma": 0.1
+      },
+      {
+        "clf__C": 10.0,
+        "clf__gamma": 0.1
+      },
+      {
+        "clf__C": 10.0,
+        "clf__gamma": "scale"
+      }
+    ],
+    "Random Forest": [
+      {
+        "clf__max_depth": null,
+        "clf__min_samples_leaf": 1
+      },
+      {
+        "clf__max_depth": null,
+        "clf__min_samples_leaf": 1
+      },
+      {
+        "clf__max_depth": null,
+        "clf__min_samples_leaf": 1
+      },
+      {
+        "clf__max_depth": 12,
+        "clf__min_samples_leaf": 1
+      },
+      {
+        "clf__max_depth": null,
+        "clf__min_samples_leaf": 1
+      }
+    ],
+    "ANN (MLP)": [
+      {
+        "clf__alpha": 0.0001,
+        "clf__hidden_layer_sizes": [
+          128,
+          64
+        ],
+        "clf__learning_rate_init": 0.001
+      },
+      {
+        "clf__alpha": 0.0001,
+        "clf__hidden_layer_sizes": [
+          128,
+          64
+        ],
+        "clf__learning_rate_init": 0.001
+      },
+      {
+        "clf__alpha": 0.01,
+        "clf__hidden_layer_sizes": [
+          64,
+          32
+        ],
+        "clf__learning_rate_init": 0.01
+      },
+      {
+        "clf__alpha": 0.0001,
+        "clf__hidden_layer_sizes": [
+          128,
+          64
+        ],
+        "clf__learning_rate_init": 0.001
+      },
+      {
+        "clf__alpha": 0.0001,
+        "clf__hidden_layer_sizes": [
+          128,
+          64
+        ],
+        "clf__learning_rate_init": 0.01
+      }
+    ]
+  },
+  "protocol_B": {
+    "Logistic Regression": {
+      "params": [
+        {
+          "clf__C": 0.01,
+          "clf__class_weight": "balanced"
+        },
+        {
+          "clf__C": 0.01,
+          "clf__class_weight": null
+        },
+        {
+          "clf__C": 0.01,
+          "clf__class_weight": null
+        },
+        {
+          "clf__C": 0.01,
+          "clf__class_weight": "balanced"
+        },
+        {
+          "clf__C": 0.1,
+          "clf__class_weight": "balanced"
+        }
+      ],
+      "tuned_thresholds": [
+        0.68,
+        0.17,
+        0.41,
+        0.41,
+        0.5
+      ]
+    },
+    "SVM (RBF)": {
+      "params": [
+        {
+          "clf__C": 0.1,
+          "clf__gamma": 0.1
+        },
+        {
+          "clf__C": 0.1,
+          "clf__gamma": 0.1
+        },
+        {
+          "clf__C": 0.1,
+          "clf__gamma": 0.1
+        },
+        {
+          "clf__C": 0.1,
+          "clf__gamma": 0.1
+        },
+        {
+          "clf__C": 0.1,
+          "clf__gamma": 0.1
+        }
+      ],
+      "tuned_thresholds": [
+        0.42,
+        0.48,
+        0.4,
+        0.31,
+        0.55
+      ]
+    },
+    "Random Forest": {
+      "params": [
+        {
+          "clf__max_depth": null,
+          "clf__min_samples_leaf": 3
+        },
+        {
+          "clf__max_depth": 12,
+          "clf__min_samples_leaf": 1
+        },
+        {
+          "clf__max_depth": 12,
+          "clf__min_samples_leaf": 3
+        },
+        {
+          "clf__max_depth": null,
+          "clf__min_samples_leaf": 3
+        },
+        {
+          "clf__max_depth": null,
+          "clf__min_samples_leaf": 10
+        }
+      ],
+      "tuned_thresholds": [
+        0.41,
+        0.36,
+        0.43,
+        0.24,
+        0.38
+      ]
+    },
+    "ANN (MLP)": {
+      "params": [
+        {
+          "clf__alpha": 0.01,
+          "clf__hidden_layer_sizes": [
+            128,
+            64
+          ],
+          "clf__learning_rate_init": 0.001
+        },
+        {
+          "clf__alpha": 0.0001,
+          "clf__hidden_layer_sizes": [
+            64,
+            32
+          ],
+          "clf__learning_rate_init": 0.001
+        },
+        {
+          "clf__alpha": 0.01,
+          "clf__hidden_layer_sizes": [
+            128,
+            64
+          ],
+          "clf__learning_rate_init": 0.001
+        },
+        {
+          "clf__alpha": 0.01,
+          "clf__hidden_layer_sizes": [
+            32
+          ],
+          "clf__learning_rate_init": 0.001
+        },
+        {
+          "clf__alpha": 0.0001,
+          "clf__hidden_layer_sizes": [
+            128,
+            64
+          ],
+          "clf__learning_rate_init": 0.001
+        }
+      ],
+      "tuned_thresholds": [
+        0.56,
+        0.3,
+        0.53,
+        0.2,
+        0.5
+      ]
+    }
+  }
+}

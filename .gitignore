@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Unpublished manuscript drafts are kept out of this public repository.
+*.pdf
