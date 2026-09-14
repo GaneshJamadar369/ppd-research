@@ -1,0 +1,146 @@
+{
+  "effective_n": 248,
+  "independence_test": {
+    "n_rows": 1168,
+    "combination_space": 14580,
+    "observed_unique": 248,
+    "observed_singletons": 1,
+    "observed_max_repeat": 33,
+    "observed_duplicate_rows": 920,
+    "sim_unique_mean": 1080.318,
+    "sim_unique_lo": 1055,
+    "sim_unique_hi": 1104,
+    "sim_singletons_mean": 999.29,
+    "sim_singletons_lo": 948,
+    "sim_singletons_hi": 1045
+  },
+  "dispersion_test": {
+    "observed_singletons": 1,
+    "sim_singletons_mean": 38.824,
+    "sim_singletons_lo": 26,
+    "sim_singletons_hi": 54,
+    "observed_variance": 28.25545252709939,
+    "sim_variance_mean": 33.1256387619172,
+    "dispersion_ratio": 0.8529783449665337
+  },
+  "inflation": {
+    "Logistic Regression": {
+      "AUC_A": 0.8407,
+      "AUC_B": 0.7778,
+      "F1_A": 0.6951,
+      "F1_B": 0.6508,
+      "Acc_A": 0.7543,
+      "Acc_B": 0.7294,
+      "dAUC": 0.0629,
+      "dF1": 0.0443,
+      "dAcc": 0.0249
+    },
+    "SVM (RBF)": {
+      "AUC_A": 0.9974,
+      "AUC_B": 0.8913,
+      "F1_A": 0.9892,
+      "F1_B": 0.464,
+      "Acc_A": 0.9914,
+      "Acc_B": 0.7243,
+      "dAUC": 0.1061,
+      "dF1": 0.5252,
+      "dAcc": 0.2672
+    },
+    "Random Forest": {
+      "AUC_A": 0.9976,
+      "AUC_B": 0.8902,
+      "F1_A": 0.9827,
+      "F1_B": 0.7137,
+      "Acc_A": 0.9863,
+      "Acc_B": 0.7842,
+      "dAUC": 0.1074,
+      "dF1": 0.269,
+      "dAcc": 0.2021
+    },
+    "ANN (MLP)": {
+      "AUC_A": 0.9863,
+      "AUC_B": 0.8079,
+      "F1_A": 0.9516,
+      "F1_B": 0.6605,
+      "Acc_A": 0.9615,
+      "Acc_B": 0.727,
+      "dAUC": 0.1784,
+      "dF1": 0.291,
+      "dAcc": 0.2345
+    }
+  },
+  "monotonicity": [
+    {
+      "Item": "Feeling sad or Tearful",
+      "levels": "No < Sometimes < Yes",
+      "monotone": false,
+      "middle_below_none": true,
+      "rate_none": 0.6135265700483091,
+      "rate_mid": 0.203125,
+      "rate_full": 0.3225806451612903
+    },
+    {
+      "Item": "Irritable towards baby & partner",
+      "levels": "No < Sometimes < Yes",
+      "monotone": true,
+      "middle_below_none": false,
+      "rate_none": 0.24647887323943662,
+      "rate_mid": 0.31438127090301005,
+      "rate_full": 0.5949656750572082
+    },
+    {
+      "Item": "Trouble sleeping at night",
+      "levels": "No < Two or more days a week < Yes",
+      "monotone": false,
+      "middle_below_none": false,
+      "rate_none": 0.225130890052356,
+      "rate_mid": 0.5230414746543779,
+      "rate_full": 0.4147727272727273
+    },
+    {
+      "Item": "Problems concentrating or making decision",
+      "levels": "No < Often < Yes",
+      "monotone": false,
+      "middle_below_none": true,
+      "rate_none": 0.4495192307692308,
+      "rate_mid": 0.14532019704433496,
+      "rate_full": 0.6197604790419161
+    },
+    {
+      "Item": "Overeating or loss of appetite",
+      "levels": "No < Yes",
+      "monotone": true,
+      "middle_below_none": false,
+      "rate_none": 0.39599555061179087,
+      "rate_mid": NaN,
+      "rate_full": 0.3828996282527881
+    },
+    {
+      "Item": "Feeling anxious",
+      "levels": "No < Yes",
+      "monotone": true,
+      "middle_below_none": false,
+      "rate_none": 0.4025157232704403,
+      "rate_mid": NaN,
+      "rate_full": 0.38941176470588235
+    },
+    {
+      "Item": "Feeling of guilt",
+      "levels": "No < Maybe < Yes",
+      "monotone": false,
+      "middle_below_none": true,
+      "rate_none": 0.4731182795698925,
+      "rate_mid": 0.17258883248730963,
+      "rate_full": 0.5990338164251208
+    },
+    {
+      "Item": "Problems of bonding with baby",
+      "levels": "No < Sometimes < Yes",
+      "monotone": false,
+      "middle_below_none": true,
+      "rate_none": 0.46860986547085204,
+      "rate_mid": 0.2731829573934837,
+      "rate_full": 0.43653250773993807
+    }
+  ]
+}

@@ -430,6 +430,14 @@ def main() -> None:
                     OUT / "confusion_protocolB.png")
     imp = plot_importance(X, y, OUT / "feature_importance.png")
 
+    # Persist out-of-fold probabilities so the audit can rebuild ROC panels without
+    # re-running the nested CV.
+    oof = {"y_true": y.to_numpy()}
+    for tag, art in (("A", art_a), ("B", art_b)):
+        for model_name, a in model_artefacts(art).items():
+            oof[f"{tag}::{model_name}"] = a["oof_prob"]
+    np.savez_compressed(OUT / "oof_predictions.npz", **oof)
+
     (OUT / "selected_hyperparameters.json").write_text(
         json.dumps(
             {
