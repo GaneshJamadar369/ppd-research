@@ -1,35 +1,38 @@
 # Model Comparison — PPD Detection
 
-Target: `Suicide attempt` (Yes/No), 1,168 rows, 39.3% positive. Evaluated with grouped cross-validation (no duplicate leakage) scored per distinct questionnaire. 95% CI from bootstrap.
+## Current: Short-form screener (`phq9_perinatal.csv`)
 
-## Ranked results (best model first)
+7,008 unique rows (file had 7,000 exact duplicates), 64.8% labelled depressed (PHQ-9 ≥ 10).
+Item subsets and cut-offs chosen on the training split; all numbers below are on a held-out 20% test split.
 
-| Rank | Model | AUC | 95% CI | F1 | Recall | Precision | Accuracy |
+| Rank | Model | Questions | AUC | 95% CI | Sensitivity | Specificity | F1 |
 |---|---|---|---|---|---|---|---|
-| 🏆 **1 — DOMINANT** | **Random Forest (original)** | **0.730** | **[0.673, 0.795]** | 0.633 | 0.635 | 0.630 | 0.652 |
-| 2 | Random Forest (tuned) | 0.722 | [0.668, 0.790] | 0.696 | 0.920 | 0.560 | 0.621 |
-| 3 | Extra Trees | 0.717 | [0.659, 0.784] | 0.700 | 0.946 | 0.555 | 0.617 |
-| 4 | SVM (original) | 0.705 | [0.649, 0.771] | 0.645 | 0.709 | 0.592 | 0.632 |
-| 5 | Ensemble (5-model vote) | 0.703 | [0.644, 0.769] | 0.681 | 0.923 | 0.540 | 0.591 |
-| 6 | kNN (Hamming) | 0.701 | [0.649, 0.776] | 0.682 | 0.895 | 0.551 | 0.606 |
-| 7 | SVM (tuned) | 0.674 | [0.651, 0.776] | 0.672 | 0.895 | 0.543 | 0.589 |
-| 8 | Gradient Boosting | 0.671 | [0.621, 0.757] | 0.663 | 0.900 | 0.525 | 0.569 |
-| 9 | Categorical Naive Bayes | 0.661 | [0.590, 0.728] | 0.663 | 0.926 | 0.516 | 0.555 |
-| 10 | Logistic Regression + interactions | 0.653 | [0.603, 0.733] | 0.655 | 0.846 | 0.534 | 0.579 |
-| 11 | Logistic Regression (original) | 0.652 | [0.586, 0.723] | 0.568 | 0.521 | 0.626 | 0.626 |
-| 12 | Logistic Regression (tuned) | 0.647 | [0.585, 0.720] | 0.652 | 0.917 | 0.506 | 0.539 |
-| 13 | ANN / MLP (tuned) | 0.641 | [0.580, 0.718] | 0.643 | 0.895 | 0.209 | 0.532 |
-| 14 | ANN / MLP (original) | 0.626 | [0.570, 0.707] | 0.554 | 0.547 | 0.562 | 0.585 |
+| 🏆 **1 — DOMINANT** | **4 items: Sleep + Concentration + Slowness + Self-harm (score ≥ 5)** | **4** | **0.860** | **[0.841, 0.881]** | 0.728 | 0.846 | 0.804 |
+| 2 | 3 items + sociodemographics (GBM) | 3 | 0.819 | [0.796, 0.841] | 0.727 | 0.763 | 0.783 |
+| 3 | 3 items: Sleep + Slowness + Self-harm (score ≥ 4) | 3 | 0.818 | [0.796, 0.841] | 0.655 | 0.840 | 0.752 |
+| 4 | 2 items: Slowness + Self-harm (score ≥ 3) | 2 | 0.755 | [0.730, 0.780] | 0.580 | 0.836 | 0.695 |
+| 5 | PHQ-2 standard (Interest + Down, score ≥ 3) | 2 | 0.719 | [0.692, 0.746] | 0.708 | 0.603 | 0.736 |
+| 6 | Sociodemographics only (no questions) | 0 | 0.561 | [0.527, 0.593] | 0.567 | 0.543 | 0.625 |
 
-**Winner: Random Forest, AUC 0.730.** Best on the primary metric (AUC) and by far the tightest confidence interval. Tuning it further (row 2), swapping to Extra Trees (row 3), or ensembling 5 models (row 5) did not beat it — differences among the top 5 are not statistically significant.
+**Winner: 4-item sum score, AUC 0.860.** Asks less than half the PHQ-9 and needs no model — just add four answers.
+Adding sociodemographics to 3 items adds nothing (0.819 vs 0.818).
 
-**If recall matters more than precision** (i.e. catching more at-risk cases matters more than false alarms): Extra Trees or tuned Random Forest catch ~92–95% of positive cases vs. 64% for the plain RF, at the cost of more false positives (precision drops to ~0.56).
+**Why not use all 9 items?** The label is defined as the 9-item sum ≥ 10, so a 9-item model is 100% by arithmetic and meaningless.
+
+**Caution on this dataset:**
+- A 64.8% depression rate is far above typical perinatal prevalence (~10–20%).
+- In real clinical data the standard PHQ-2 (Interest + Down) is usually the strongest pair; here it ranks 5th.
+
+Both suggest the data may not reflect a real clinical population. Validate on independent data (e.g. PRAMS) before trusting the item selection.
+
+---
+
+## Previous: Kaggle `post natal data.csv` — discarded
+
+1,168 rows collapse to 248 distinct questionnaires; best honest AUC 0.730 (Random Forest). See `results/baseline_improved_summary.csv`.
 
 ## Files
 
-- `post natal data.csv` — dataset
-- `ppd_preprocessing.py` — cleaning, encoding, imputation
-- `ppd_improved_baselines.py` — trains and evaluates all 14 models above (run: `python ppd_improved_baselines.py`)
-- `results/baseline_improved_summary.csv` — this table, machine-readable
-- `results/fig_baseline_improvement.png` — chart version
-- `results/preprocessing_report.md` — data quality notes
+- `phq9_perinatal.csv` — current dataset
+- `ppd_short_form.py` — short-form comparison above → `results/short_form_comparison.csv`
+- `post natal data.csv`, `ppd_preprocessing.py`, `ppd_improved_baselines.py` — previous dataset
