@@ -12,3 +12,9 @@ Thumbs.db
 
 # Unpublished manuscript drafts are kept out of this public repository.
 *.pdf
+
+# Resumability caches for long-running CV scripts — internal, not reader-facing;
+# the CSV/JSON/PNG outputs they feed are what's tracked.
+results/baseline_cache/
+results/eval_cv_cache_*.pkl
+

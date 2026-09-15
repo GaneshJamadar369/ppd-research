@@ -1,0 +1,10 @@
+Short,Naive χ² (rows),Rao–Scott + Holm,Cluster permutation + Holm,Distinct patterns + BH,"Adjusted, cluster-robust + Holm","Adjusted, distinct patterns + Holm",Survives
+Age,True,False,False,False,False,False,1/6
+Sad/tearful,True,True,True,False,False,False,3/6
+Irritable,True,True,True,True,True,True,6/6
+Sleep trouble,True,False,False,False,False,False,1/6
+Concentration,True,True,True,False,True,False,4/6
+Appetite,False,False,False,False,False,False,0/6
+Anxious,False,False,False,False,False,False,0/6
+Guilt,True,True,True,False,True,False,4/6
+Bonding,True,False,False,False,False,False,1/6

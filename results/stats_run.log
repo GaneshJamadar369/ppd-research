@@ -1,0 +1,107 @@
+rows 1168, distinct questionnaires 248
+S1 profiles
+S2 association (bootstrap + permutation)
+S3 trend
+S4 logistic regression
+S5 dependence (polychoric)
+S6 scale structure
+S7 MCA
+S8 missingness (Little's MCAR)
+S9 duplication
+figures
+
+=== Robustness ladder (True = significant at 0.05) ===
+        Short  Naive χ² (rows)  Rao–Scott + Holm  Cluster permutation + Holm  Distinct patterns + BH  Adjusted, cluster-robust + Holm  Adjusted, distinct patterns + Holm Survives
+          Age             True             False                       False                   False                            False                               False      1/6
+  Sad/tearful             True              True                        True                   False                            False                               False      3/6
+    Irritable             True              True                        True                    True                             True                                True      6/6
+Sleep trouble             True             False                       False                   False                            False                               False      1/6
+Concentration             True              True                        True                   False                             True                               False      4/6
+     Appetite            False             False                       False                   False                            False                               False      0/6
+      Anxious            False             False                       False                   False                            False                               False      0/6
+        Guilt             True              True                        True                   False                             True                               False      4/6
+      Bonding             True             False                       False                   False                            False                               False      1/6
+
+=== S1 profile ===
+        Short  Levels  Missing n                    Mode  Mode share  Norm. entropy  Gini-Simpson  Imbalance (max/min)
+          Age       5          0                   35-40       0.244          0.979         0.788                2.192
+  Sad/tearful       3          0                     Yes       0.372          0.992         0.661                1.356
+    Irritable       3          6                     Yes       0.376          0.988         0.658                1.462
+Sleep trouble       3          0 Two or more days a week       0.372          0.997         0.664                1.233
+Concentration       3         12                      No       0.360          0.996         0.664                1.246
+     Appetite       2          0                      No       0.770          0.779         0.355                3.342
+      Anxious       2          0                     Yes       0.728          0.845         0.396                2.673
+        Guilt       3          9                      No       0.481          0.934         0.621                2.696
+      Bonding       3          0                      No       0.382          0.992         0.661                1.381
+
+=== S2 association  (deff 10.68, Kish n 109.3) ===
+        Short  Chi2 (rows)  p (naive rows)  Chi2 Rao-Scott  q Holm (Rao-Scott)  p (patterns)  q BH (patterns)   V_bc   V_lo   V_hi  V_bc (patterns)  p perm (cluster)     IV
+          Age      15.6777          0.0035          1.4673              1.0000        0.2688           0.3456 0.1000 0.0588 0.3257           0.0688            0.8071 0.0581
+  Sad/tearful     141.7861          0.0000         13.2697              0.0105        0.0191           0.0573 0.3461 0.1867 0.5040           0.1546            0.0005 0.5275
+    Irritable     120.5734          0.0000         11.2844              0.0213        0.0023           0.0207 0.3196 0.1590 0.4720           0.2035            0.0040 0.4408
+Sleep trouble      76.5927          0.0000          7.1683              0.1388        0.0705           0.1058 0.2528 0.1061 0.4154           0.1155            0.0205 0.2918
+Concentration     182.1510          0.0000         17.0475              0.0018        0.0493           0.0888 0.3949 0.2718 0.5184           0.1285            0.0005 0.7561
+     Appetite       0.1489          0.6996          0.0139              1.0000        0.4824           0.4866 0.0000 0.0000 0.1680           0.0000            0.8561 0.0005
+      Anxious       0.1666          0.6832          0.0156              1.0000        0.4866           0.4866 0.0000 0.0000 0.1804           0.0000            0.9080 0.0006
+        Guilt     132.0353          0.0000         12.3571              0.0145        0.0130           0.0573 0.3351 0.2085 0.4701           0.1654            0.0010 0.5341
+      Bonding      37.2670          0.0000          3.4878              0.6993        0.0418           0.0888 0.1738 0.0351 0.3482           0.1326            0.1654 0.1390
+
+composite score: {'AUC rows': 0.5394, 'AUC patterns': 0.4911, 'Mann-Whitney U (patterns)': 7526.5, 'MW p (patterns)': 0.8065, 'Spearman rho (patterns)': -0.0156, 'Spearman p (patterns)': 0.8064, 'Mean score pos (patterns)': 6.9288, 'Mean score neg (patterns)': 6.8626}
+
+=== S3 trend ===
+        Short     Unit       z  p_trend  chi2_dev  p_dev  q Holm (dev)  trend_share
+          Age     rows -2.7809   0.0054    7.9446 0.0472        0.0472       0.4933
+          Age patterns -2.0748   0.0380    0.8802 0.8302        1.0000       0.8302
+  Sad/tearful     rows -8.5696   0.0000   68.3473 0.0000        0.0000       0.5180
+  Sad/tearful patterns -2.3358   0.0195    2.4588 0.1169        0.4675       0.6893
+    Irritable     rows 10.4912   0.0000   10.5076 0.0012        0.0024       0.9129
+    Irritable patterns  3.4849   0.0005    0.0050 0.9436        1.0000       0.9996
+Sleep trouble     rows  5.4282   0.0000   47.1276 0.0000        0.0000       0.3847
+Sleep trouble patterns  1.1163   0.2643    4.0573 0.0440        0.2199       0.2350
+Concentration     rows  3.9148   0.0001  166.8256 0.0000        0.0000       0.0841
+Concentration patterns  0.7769   0.4372    5.4157 0.0200        0.1197       0.1003
+        Guilt     rows -0.1517   0.8794  132.0123 0.0000        0.0000       0.0002
+        Guilt patterns  0.4326   0.6653    8.4960 0.0036        0.0249       0.0216
+      Bonding     rows -1.4642   0.1431   35.1231 0.0000        0.0000       0.0575
+      Bonding patterns -2.2040   0.0275    1.4917 0.2220        0.6659       0.7651
+
+=== S4 logistic  McFadden R2 0.310 (patterns 0.135), median SE inflation x2.12 ===
+                                     Item         Short  df  LR chi2 (naive)  p LR (naive)  Wald chi2 (robust)  p Wald (robust)  Linearity LR (naive)  p linearity LR (naive)  Linearity Wald (robust)  p linearity (robust)  q Holm robust  q Holm linearity  p LR (patterns)  q Holm LR (patterns)
+                                      Age           Age   4          11.1555        0.0249              2.7550           0.5996                1.5874                  0.6622                   0.3587                0.9486         1.0000            1.0000           0.1100                0.7506
+                   Feeling sad or Tearful   Sad/tearful   2          28.9673        0.0000              6.1299           0.0467               18.3165                  0.0000                   3.8300                0.0503         0.2799            0.2517           0.2538                0.8213
+         Irritable towards baby & partner     Irritable   2          66.7399        0.0000             15.5966           0.0004                2.2091                  0.1372                   0.4058                0.5241         0.0033            1.0000           0.0034                0.0308
+                Trouble sleeping at night Sleep trouble   2          19.9715        0.0000              4.6282           0.0989                8.6440                  0.0033                   1.7952                0.1803         0.4943            0.7212           0.2053                0.8213
+Problems concentrating or making decision Concentration   2         105.7274        0.0000             17.2181           0.0002               95.5964                  0.0000                  15.3996                0.0001         0.0016            0.0006           0.1248                0.7506
+           Overeating or loss of appetite      Appetite   1           0.0972        0.7553              0.0216           0.8831                   NaN                     NaN                      NaN                   NaN         1.0000               NaN           0.3563                0.8213
+                          Feeling anxious       Anxious   1           0.0088        0.9252              0.0018           0.9657                   NaN                     NaN                      NaN                   NaN         1.0000               NaN           0.8921                0.8921
+                         Feeling of guilt         Guilt   2          67.2787        0.0000             13.6183           0.0011               67.2754                  0.0000                  13.6061                0.0002         0.0077            0.0014           0.0168                0.1347
+            Problems of bonding with baby       Bonding   2           6.9336        0.0312              1.4166           0.4925                4.3608                  0.0368                   0.8489                0.3569         1.0000            1.0000           0.1072                0.7506
+
+=== S5 dependence ===
+row-vs-pattern stability r = 0.796;  item pairs significant: patterns+Holm 2/36, Rao-Scott+Holm 4/36
+                                     Item         Short  df  GVIF  GVIF^(1/2df)
+                                      Age           Age   4 1.240         1.027
+                   Feeling sad or Tearful   Sad/tearful   2 2.249         1.225
+         Irritable towards baby & partner     Irritable   2 1.780         1.155
+                Trouble sleeping at night Sleep trouble   2 2.288         1.230
+Problems concentrating or making decision Concentration   2 2.037         1.195
+           Overeating or loss of appetite      Appetite   1 1.358         1.165
+                          Feeling anxious       Anxious   1 1.742         1.320
+                         Feeling of guilt         Guilt   2 2.005         1.190
+            Problems of bonding with baby       Bonding   2 1.958         1.183
+
+=== S6 scale ===
+{'ordinal_alpha': -0.1138, 'mean_polychoric': -0.0129, 'omega_total': 0.0268, 'kmo': 0.5083, 'bartlett_chi2': 482.2828, 'bartlett_p': 0.0, 'n_factors_parallel': 3} | alpha rows -0.118 patterns -0.218
+item-rest (rows): [-0.002, -0.203, -0.206, 0.172, 0.199, -0.193, -0.04, 0.077]
+loadings: [0.328, -0.204, 0.192, -0.162, 0.446, -0.794, 0.777, -0.165]
+
+=== S7 MCA ===
+Greenacre %: [34.9, 19.1, 10.7, 4.5, 2.8] | eta2 target: [0.0938, 0.0318, 0.0952]
+
+=== S8 missing ===
+{'cells': 27, 'rows': 12, 'rows_multi_missing': 9, 'per_item': {'Age': 0, 'Sad/tearful': 0, 'Irritable': 6, 'Sleep trouble': 0, 'Concentration': 12, 'Appetite': 0, 'Anxious': 0, 'Guilt': 9, 'Bonding': 0}, 'na_patterns': 4, 'na_pattern_row_counts': [3, 3, 3, 3], 'na_pattern_total_sizes': [3, 3, 3, 3], 'fisher_table_patterns': [[129, 115], [2, 2]], 'fisher_p_patterns': 1.0} | Little: {'d2': 18.38723360829993, 'df': 21, 'p': 0.6243845612687946, 'n_missing_patterns': 3}
+
+=== S9 duplication ===
+{'prev_rows_by_pattern_label': 0.3947, 'perm_null_mean': 0.472, 'perm_null_lo': 0.4033, 'perm_null_hi': 0.5428, 'perm_p': 0.0304, 'rows_from_neg': 707.0, 'rows_from_pos': 461.0, 'rows': 1168, 'patterns': 248, 'kish_n': 109.3128, 'deff': 10.6849, 'prev_rows': (0.3929794520547945, 0.36536351674240886, 0.42129706946651224), 'prev_patterns': (0.4717741935483871, 0.4105481152383309, 0.5338613866072738), 'mean_size_pos': 3.9402, 'mean_size_neg': 5.3969, 'median_size_pos': 3.0, 'median_size_neg': 3.0, 'mw_U': 6739.5, 'mw_p': 0.0857}
+
+written to C:\Users\HP\Documents\PPD Research\results

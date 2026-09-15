@@ -29,8 +29,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import sys
 import warnings
 from pathlib import Path
+
+# The Windows console defaults to cp1252, which cannot print symbols such as Δ; an
+# earlier run crashed on exactly that after its CV had finished.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+# joblib otherwise shells out to count physical cores and prints a traceback on Windows.
+os.environ.setdefault("LOKY_MAX_CPU_COUNT", str(os.cpu_count() or 1))
 
 import matplotlib
 matplotlib.use("Agg")
@@ -266,39 +275,48 @@ def net_benefit(y, prob, thresholds) -> np.ndarray:
     return np.asarray(nb)
 
 
-def fig_calibration_dca(y, res: dict, path: Path) -> None:
-    models = [m for m in res if m != "Majority class"]
+def fig_calibration_dca(pat: dict, path: Path) -> None:
+    """Calibration and decision curves, one point per distinct questionnaire.
+
+    `pat` maps model -> (y, prob) already aggregated to the pattern level, so this
+    figure is scored on the same unit as the primary AUC.
+    """
+    models = [m for m in pat if m != "Majority class"]
     fig, axes = plt.subplots(1, 2, figsize=(13.5, 5.4))
 
     ax = axes[0]
     ax.plot([0, 1], [0, 1], "k--", lw=1, label="Perfect calibration")
     for m in models:
-        p = res[m]["prob"]
-        edges = np.unique(np.quantile(p, np.linspace(0, 1, 9)))
+        y, p = pat[m]
+        edges = np.unique(np.quantile(p, np.linspace(0, 1, 7)))
         xs, ys = [], []
         for lo, hi in zip(edges[:-1], edges[1:]):
             msk = (p >= lo) & (p < hi) if hi != edges[-1] else (p >= lo)
-            if msk.sum() >= 20:
+            if msk.sum() >= 15:
                 xs.append(p[msk].mean())
                 ys.append(y[msk].mean())
         ax.plot(xs, ys, "o-", lw=1.8, ms=4, color=MODEL_COLOURS[m],
                 label=f"{m} (Brier {brier_score_loss(y, p):.3f})")
     ax.set_xlabel("Predicted probability")
     ax.set_ylabel("Observed frequency")
-    ax.set_title("(a) Calibration under Protocol B", fontsize=10)
+    ax.set_title("(a) Calibration, Protocol B, one point per questionnaire", fontsize=10)
     ax.legend(fontsize=8, loc="upper left")
     ax.grid(alpha=0.25)
 
     ax = axes[1]
     ts = np.linspace(0.05, 0.85, 90)
-    prev = y.mean()
+    y0 = pat[models[0]][0]
+    prev = y0.mean()
     ax.plot(ts, prev - (1 - prev) * (ts / (1 - ts)), color="k", lw=1.2, ls="--",
             label="Screen everyone")
     ax.axhline(0, color="k", lw=1.2, label="Screen no one")
     for m in models:
-        ax.plot(ts, net_benefit(y, res[m]["prob"], ts), lw=2, color=MODEL_COLOURS[m], label=m)
+        y, p = pat[m]
+        ax.plot(ts, net_benefit(y, p, ts), lw=2, color=MODEL_COLOURS[m], label=m)
     ax.set_ylim(-0.12, prev + 0.05)
-    ax.set_xlabel("Threshold probability (harm of a missed case ÷ harm of a false alarm)")
+    # At threshold p_t, the odds p_t/(1-p_t) equal the harm of one false alarm divided
+    # by the benefit of catching one true case.
+    ax.set_xlabel("Threshold probability  pₜ   (odds = false-alarm harm ÷ case-found benefit)")
     ax.set_ylabel("Net benefit")
     ax.set_title("(b) Decision-curve analysis", fontsize=10)
     ax.legend(fontsize=8, loc="upper right")
@@ -351,6 +369,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--repeats", type=int, default=3)
     ap.add_argument("--encoding", default="onehot", choices=["onehot", "ordinal", "hybrid"])
+    ap.add_argument("--use-cache", action="store_true",
+                    help="Reuse cached out-of-fold predictions and skip the nested CV.")
     args = ap.parse_args()
     ENCODING = args.encoding
 
@@ -359,15 +379,24 @@ def main() -> None:
     yv = y.to_numpy()
     rng = np.random.default_rng(SEED)
 
-    results = {
-        "A": run_repeated_cv(X, y, None, "A", args.repeats),
-        "B": run_repeated_cv(X, y, groups, "B", args.repeats),
-    }
-
-    # Protocol C: one row per distinct questionnaire (majority label on the 1 tie).
+    # Protocol C: one row per distinct questionnaire (first row's label; 1 pattern is tied).
     first = pd.Series(groups).drop_duplicates().index
     Xd, yd = X.loc[first].reset_index(drop=True), y.loc[first].reset_index(drop=True)
-    results["C"] = run_repeated_cv(Xd, yd, None, "C", args.repeats)
+
+    # The nested CV is the expensive stage (~50 min at 3 repeats). Cache its out-of-fold
+    # output so the analysis below can be re-run in seconds with --use-cache.
+    cache = OUT / f"eval_cv_cache_r{args.repeats}_{ENCODING}.pkl"
+    if args.use_cache and cache.exists():
+        results = pd.read_pickle(cache)
+        print(f"\nLoaded cached CV results from {cache.name}")
+    else:
+        results = {
+            "A": run_repeated_cv(X, y, None, "A", args.repeats),
+            "B": run_repeated_cv(X, y, groups, "B", args.repeats),
+            "C": run_repeated_cv(Xd, yd, None, "C", args.repeats),
+        }
+        pd.to_pickle(results, cache)
+        print(f"\nCached CV results to {cache.name}", flush=True)
 
     # ---- cluster-bootstrap CIs and paired tests on Protocol B
     print(f"\n{'=' * 78}\nCluster-bootstrap CIs and paired tests (Protocol B, "
@@ -385,11 +414,13 @@ def main() -> None:
         # pattern-weighted: one point per distinct questionnaire
         py, pp = pattern_aggregate(yv, r["prob"], groups)
         pauc, plo, phi = boot_ci(py, pp, pat_sets, "ROC-AUC")
-        pf1 = point_metrics(py, (pp >= 0.5).astype(int), pp)["F1"]
+        ppm = point_metrics(py, (pp >= 0.5).astype(int), pp)
         rows.append({"Model": m, "AUC": auc, "AUC_lo": lo, "AUC_hi": hi,
                      "AUC_pat": pauc, "AUC_pat_lo": plo, "AUC_pat_hi": phi,
                      "dAUC_weighting": auc - pauc,
-                     "F1": f1, "F1_lo": f1lo, "F1_hi": f1hi, "F1_pat": pf1,
+                     "F1": f1, "F1_lo": f1lo, "F1_hi": f1hi, "F1_pat": ppm["F1"],
+                     "Acc_pat": ppm["Accuracy"], "Brier_pat": ppm["Brier"],
+                     "ECE_pat": ece(py, pp), "MCC_pat": ppm["MCC"],
                      "Accuracy": pm["Accuracy"], "Brier": pm["Brier"],
                      "ECE": ece(yv, r["prob"]), "MCC": pm["MCC"]})
     summary = pd.DataFrame(rows).sort_values("AUC_pat", ascending=False).reset_index(drop=True)
@@ -429,7 +460,7 @@ def main() -> None:
     print(ctab.round(3).to_string(index=False))
     ctab.to_csv(OUT / "eval_protocol_comparison.csv", index=False)
 
-    fig_calibration_dca(yv, results["B"], OUT / "fig_eval_calibration_dca.png")
+    fig_calibration_dca(pat, OUT / "fig_eval_calibration_dca.png")
     fig_forest(summary, OUT / "fig_eval_forest.png")
 
     (OUT / "eval_statistics.json").write_text(json.dumps({

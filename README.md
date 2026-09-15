@@ -1,65 +1,72 @@
 # Postpartum Depression — Structured Branch Baselines & Data-Quality Audit
 
-Classical ML baselines (Logistic Regression, SVM, Random Forest, ANN) on the widely cited
-Kaggle **"PostPartum Depression"** survey (`post natal data.csv`, 1,503 responses), together
-with a data-quality audit of that benchmark.
+Classical ML baselines (Logistic Regression, SVM, Random Forest, ANN, plus five learners suited
+to small categorical data and a pre-specified ensemble — 13 models in total) on the widely
+cited Kaggle **"PostPartum Depression"** survey (`post natal data.csv`, 1,503 responses),
+together with a data-quality audit of that benchmark.
 
-The audit is the main result: **the ~99% accuracies reported for this dataset are an artifact
-of duplicate leakage**, and the dataset does not behave like 1,503 independent respondents.
+The audit is the main result: **the ~99% accuracies reported for this dataset are inflated
+twice over** — once by duplicate leakage, once by scoring duplicated rows instead of distinct
+questionnaires — and the corrected ceiling, which thirteen models and extensive tuning cannot
+cross, is **ROC-AUC ≈ 0.73**.
 
 ---
 
 ## Headline findings
 
-### 1. The benchmark has an effective sample size of ~248, not 1,503
+### 1. The benchmark has an effective sample size of 109–248, not 1,503
 
-The 9 items admit 14,580 possible response combinations. Drawing 1,168 independent
-respondents from the dataset's own marginal distributions gives:
+The 9 items admit 14,580 possible response combinations. The 1,168 analysed rows contain only
+**248 distinct response patterns**, and two independent tests reject that this arose from
+independent sampling: simulating independent respondents from the data's own marginals
+predicts ~999 patterns occurring exactly once; the file contains **one**. A second,
+assumption-free test that grants the observed pattern frequencies entirely and asks only
+whether the repeat *counts* look like random sampling still rejects (39 expected singletons
+vs. 1 observed).
 
-| | Observed | Simulated (independent respondents) |
+Accounting for how unevenly those 248 patterns repeat (Kish's design effect = 10.68) puts the
+**effective sample size at 109** — the standard survey-methodology answer, and more
+conservative than the raw pattern count. The duplication is not label-neutral either: patterns
+positive for the outcome are repeated less (mean 3.9×) than negative ones (mean 5.4×), shifting
+row-level prevalence (39.3%) away from pattern-level prevalence (47.2%) at p = 0.030 — so
+row-weighted statistics are systematically biased, not just noisier.
+
+### 2. Scores are inflated twice over, and thirteen models cannot recover the difference
+
+| Stage | What it fixes | ROC-AUC (Random Forest) |
 |---|---|---|
-| Unique response patterns | **248** | 1,080 |
-| Patterns occurring exactly once | **1** | 999 |
-| Max repeats of a single pattern | **33** | ~3 |
+| Standard CV (literature as reported) | nothing | **0.998** |
+| Grouped CV, row-weighted | duplicate leakage | **0.895–0.901** |
+| Grouped CV, **pattern-weighted** | leakage + row-weighting | **0.703–0.730** |
 
-Independent sampling predicts ~999 singleton patterns; the file contains **one**. Inter-item
-association is far too weak (Cramér's V mostly ≈0.2, max 0.51) to explain a gap that size.
-The data is consistent with a small pool of templates resampled to inflate the row count.
+Identical data and models; only the protocol differs. The pattern-weighted figure is
+corroborated three ways (a direct evaluation, an independent learning-curve experiment, and a
+from-scratch nested-tuning pass) and all three land in the same 0.66–0.73 band.
 
-### 2. Duplicate leakage inflates scores, and the inflation scales with model capacity
+**We then tried to beat it.** Thirteen models — the four originals, the same four families with
+wide randomised search tuned directly on the pattern-weighted metric, five learners suited to
+small categorical data (categorical naive Bayes, extra trees, categorical gradient boosting,
+Hamming-kNN, interaction logistic regression), and a pre-specified soft-voting ensemble — were
+evaluated under identical, paired, leakage- and weighting-controlled splits. **None beat a
+plain, small-grid Random Forest** (Holm-adjusted q = 1.000 for every original-vs-improved
+pair). The ceiling is a property of the data, not of modelling effort.
 
-Identical data and models; only the cross-validation split differs.
+### 3. Only one of nine items survives as a defensible predictor
 
-| Model | ΔAUC | ΔF1 | ΔAccuracy |
-|---|---|---|---|
-| Logistic Regression | 0.063 | 0.044 | 0.025 |
-| SVM (RBF) | 0.106 | **0.525** | 0.267 |
-| Random Forest | 0.107 | 0.269 | 0.202 |
-| ANN (MLP) | **0.178** | 0.291 | 0.235 |
+Each item was tested under six corrections of increasing rigor. Naively, 7 of 9 look
+significant; a design-effect correction alone drops that to 5; requiring the association to
+hold on distinct patterns (no duplicate weight at all) drops it to **one: Irritable towards
+baby & partner**.
 
-Logistic regression barely moves because it cannot memorise. The apparent superiority of the
-nonlinear models under a standard split is memorisation, not signal — so **published model
-rankings on this dataset do not survive a leakage-controlled protocol**, and the flexible
-models (including the ANN) are the ones most affected.
+This is corroborated by: four items having their *lowest*-risk level in the middle of the
+response scale rather than at "no symptom"; a composite severity score (sum of all eight
+symptom items) scoring **AUC 0.491** on distinct patterns — chance; and negative scale
+reliability (**Cronbach's α = −0.22** on distinct patterns, ω = 0.03, KMO = 0.51). A
+nine-encoding, four-training-strategy robustness check confirms this isn't a preprocessing
+artefact — nothing beats plain one-hot at a Holm-corrected significance level.
 
-The confusion matrices make it concrete: the RBF-SVM goes from **4 false negatives to 318**.
-
-### 3. Symptom–risk relationships are clinically inverted
-
-| Item | Attempt rate by response level |
-|---|---|
-| Feeling sad or tearful | **No = 0.61**, Sometimes = 0.20, Yes = 0.32 |
-| Problems concentrating | No = 0.45, **Often = 0.15**, Yes = 0.62 |
-| Feeling of guilt | No = 0.47, **Maybe = 0.17**, Yes = 0.60 |
-
-Respondents reporting *no* sadness show a ~3× higher attempt rate than those reporting
-"sometimes." Five of eight symptom items are non-monotone in severity, and the middle option
-is protective in four of them — a construct-validity failure, not a subtle interaction. Two
-items (`Feeling anxious`, `Overeating or loss of appetite`) have no association with the
-target at all (p ≈ 0.73/0.75, Cramér's V = 0.000).
-
-**Recommendation:** treat this dataset as an audit object, not as training data for a
-deployed screening model.
+**Recommendation:** treat this dataset as an audit object, not as training data for a deployed
+screening model.
 
 ---
 
@@ -69,55 +76,67 @@ Target is `Suicide attempt` (Yes/No), the PPD severity proxy used in prior work;
 `Not interested to say` (n=335) is dropped as non-response, leaving 1,168 rows at a 39.3%
 positive rate.
 
-**Protocol B — leakage-controlled grouped 5-fold CV (the defensible numbers):**
+**Corrected reference result — leakage- and weighting-controlled, pattern-weighted:**
 
-| Model | Accuracy | Precision | Recall | F1 | ROC-AUC |
+| Model | AUC | 95% CI | F1 | Recall | Precision |
 |---|---|---|---|---|---|
-| Random Forest | **0.784 ± 0.052** | 0.748 | 0.686 | **0.714** | 0.890 |
-| SVM (RBF) | 0.724 ± 0.024 | **0.971** | 0.307 | 0.464 | **0.891** |
-| Logistic Regression | 0.729 ± 0.067 | 0.669 | 0.653 | 0.651 | 0.778 |
-| ANN (MLP) | 0.727 ± 0.048 | 0.654 | 0.674 | 0.661 | 0.808 |
+| **Random Forest (original, small grid)** | **0.730** | **[0.673, 0.795]** | 0.633 | 0.635 | 0.630 |
+| Random Forest (improved, wide search) | 0.722 | [0.668, 0.790] | 0.696 | 0.920 | 0.560 |
+| Extra Trees | 0.717 | [0.659, 0.784] | 0.700 | 0.946 | 0.555 |
+| SVM (original) | 0.705 | [0.649, 0.771] | 0.645 | 0.709 | 0.592 |
+| Soft-vote ensemble (5 members) | 0.703 | [0.644, 0.769] | 0.681 | 0.923 | 0.540 |
+| Logistic Regression (original) | 0.652 | [0.586, 0.723] | 0.568 | 0.521 | 0.626 |
 
-Protocol A (standard stratified CV) reproduces the literature-style figures — SVM 0.991
-accuracy, AUC 0.997 — and is reported alongside for comparison only.
+No configuration in the table above differs significantly from the top row (Nadeau–Bengio
+corrected, Holm-adjusted). At a fixed 0.5 threshold, recall varies from 0.52–0.71 across models
+for reasons more attributable to score-distribution shape than discriminative quality —
+choosing the threshold inside the training fold instead raises recall to 0.85–0.95 at a
+precision cost, for **every** model, changing recall far more than switching models does.
 
-At the default 0.5 threshold the SVM is unusable as a screener (recall 0.307, missing 318 of
-459 at-risk mothers). Tuning the operating point on training folds only lifts recall to 0.862
-and F1 to 0.745. **Operating-point choice matters more here than model choice.**
-
-Full tables, ROC curves, confusion matrices and EDA figures are in [`results/`](results/),
-with the preprocessing audit in [`results/preprocessing_report.md`](results/preprocessing_report.md)
-and the model tables in [`results/comparison_table.md`](results/comparison_table.md).
+Full tables, robustness ladders, encoding/imputation benchmarks, and every figure are in
+[`results/`](results/); the audit narrative is in
+[`paper/audit_section.md`](paper/audit_section.md) (LaTeX: `paper/audit_section.tex`).
 
 ---
 
 ## Method
 
 **Preprocessing** ([`ppd_preprocessing.py`](ppd_preprocessing.py))
+Drops `Timestamp`; canonicalises inconsistent option wording (`Not at all` merged with `No` in
+the appetite item); builds the binary target; engineers an EPDS-style composite severity score
+(which turns out to carry no signal — see Finding 3); offers `onehot` / `ordinal` / `hybrid`
+encodings. Imputation and scaling are fitted inside training folds only.
 
-- Drops `Timestamp` (a submission clock — keeping it lets a model memorise respondents).
-- Canonicalises the survey's inconsistent option wording. Notably `Not at all` and `No` in the
-  appetite item are the same answer under two form labels, and are merged.
-- Builds a binary target and drops non-response.
-- Engineers a `Symptom severity score` (EPDS-style 0–14 composite), which ranks as the single
-  most important feature.
-- Offers three encodings: `onehot` (default — the middle levels matter non-monotonically, so
-  no ordering is imposed), `ordinal`, and `hybrid`.
-- Imputation and scaling are **not** applied here; they sit inside the modelling pipeline so
-  they are fitted on training folds only and cannot leak.
+**Statistical audit** ([`ppd_statistics.py`](ppd_statistics.py))
+Column profiles, Wilson CIs, univariate association (naive / Rao–Scott / cluster-permutation /
+distinct-pattern χ², bias-corrected Cramér's V, mutual information, Information Value),
+Cochran–Armitage trend tests, a cluster-robust multivariable logistic model, inter-item
+dependence (polychoric correlation, GVIF), scale reliability (Cronbach/ordinal α, ω, KMO,
+Bartlett, Horn's parallel analysis), multiple correspondence analysis, missingness forensics
+(Little's MCAR test), and the duplication-vs-label analysis (Kish design effect, permutation
+test on prevalence shift).
 
-**Evaluation** ([`ppd_model_comparison.py`](ppd_model_comparison.py))
+**Preprocessing robustness** ([`ppd_preprocessing_experiments.py`](ppd_preprocessing_experiments.py))
+Benchmarks imputation methods (mode, marginal sampling, KNN-Hamming, MICE-logistic, MICE-RF,
+iterative MCA) by recovery accuracy on masked *distinct* questionnaires; benchmarks 9 encodings
+and 4 training strategies against plain one-hot under grouped CV with Nadeau–Bengio corrected
+paired tests.
 
-Nested cross-validation — outer 5-fold scoring, inner 3-fold grid search on ROC-AUC — under
-two protocols:
+**Baseline evaluation** ([`ppd_model_comparison.py`](ppd_model_comparison.py),
+[`ppd_evaluation.py`](ppd_evaluation.py), [`ppd_audit.py`](ppd_audit.py))
+Nested cross-validation under two/three protocols — standard stratified CV (leaky), grouped CV
+row-weighted (leakage-controlled only), and grouped CV pattern-weighted (leakage- and
+weighting-controlled) — with cluster-bootstrap confidence intervals, calibration, and
+decision-curve analysis.
 
-- **Protocol A**: standard stratified 5-fold CV. Comparable to published work; duplicated
-  respondents span train and test, so it is optimistically biased.
-- **Protocol B**: `StratifiedGroupKFold` grouped on the unique response pattern, so identical
-  questionnaires never appear on both sides of a split. This is the generalisation estimate.
-
-Reported metrics: Accuracy, Precision, Recall, F1, ROC-AUC, Specificity, MCC, and pooled
-out-of-fold confusion matrices.
+**Improved baselines** ([`ppd_improved_baselines.py`](ppd_improved_baselines.py))
+Thirteen models sharing identical paired outer splits: the four original baselines reproduced
+exactly; the same four families with wide randomised search tuned directly on pattern-weighted
+AUC via a grouping-aware inner scorer; five learners suited to small categorical data; and a
+soft-voting ensemble with members fixed before any result was seen. Every hyperparameter and
+decision threshold is selected inside the training fold. Differences are tested with the
+Nadeau–Bengio corrected resampled t-test, Holm-adjusted. Per-model results are cached in
+`results/baseline_cache/`, so an interrupted run resumes.
 
 ---
 
@@ -126,9 +145,13 @@ out-of-fold confusion matrices.
 ```bash
 pip install -r requirements.txt
 
-python ppd_preprocessing.py                      # data-quality audit + EDA figures
-python ppd_model_comparison.py                   # model comparison (default: onehot)
-python ppd_model_comparison.py --encoding hybrid # ordinal codes + one-hot
+python ppd_preprocessing.py                        # data-quality audit + EDA figures
+python ppd_statistics.py                            # full statistical audit
+python ppd_preprocessing_experiments.py              # imputation / encoding robustness
+python ppd_model_comparison.py                       # baseline comparison (standard + grouped)
+python ppd_evaluation.py --repeats 3                 # + calibration, decision curves, CIs
+python ppd_audit.py                                  # leakage-inflation figures + learning curve
+python ppd_improved_baselines.py                     # 13-model ceiling (resumable; slow, ~30–60 min)
 ```
 
 All artefacts are written to `results/`.
@@ -145,8 +168,14 @@ self-administered Google Form responses, 9 categorical symptom items plus an age
 - `Suicide attempt` is a **self-reported severity proxy, not a clinical diagnosis**, and it is
   predicted from symptoms co-reported in the same questionnaire. This is concurrent screening,
   not anticipatory prediction.
-- The independence test in finding (1) assumes inter-item independence. Real items are
-  correlated, which reduces the expected unique-pattern count — but the observed association
-  is far too weak to account for 999 expected singletons versus 1 observed.
-- At an effective n ≈ 248, deep models are not justified on this branch; the ANN results here
-  support that.
+- The independence test behind the effective-*n* claim assumes inter-item independence and so
+  overstates expected diversity; a second, assumption-free permutation test does not rely on
+  that assumption and is the claim we rest on. We do not have provenance information for the
+  file and do not assert *how* the duplication arose.
+- Kish's design effect corrects for the *consequence* of the clustering, not its cause.
+- With 244–248 clusters, the most conservative significance tests in the robustness ladder are
+  themselves low-powered; absence of significance there is suggestive, not proof of no effect,
+  for items beyond the two that fail even the naive test.
+- The 13-model comparison is broad but not exhaustive; the ensemble's members were
+  pre-specified to avoid post-hoc selection, at the cost of not searching the full ensemble
+  space.
