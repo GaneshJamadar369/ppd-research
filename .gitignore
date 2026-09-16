@@ -18,3 +18,6 @@ Thumbs.db
 results/baseline_cache/
 results/eval_cv_cache_*.pkl
 
+
+# NHANES raw downloads (re-fetched by nhanes_build.py)
+nhanes_cache/
